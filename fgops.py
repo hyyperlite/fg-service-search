@@ -3,85 +3,120 @@ import json
 import argparse
 import ssl
 import sys
-import getopt
-import getpass
 import base64
+import os
+
 
 # read command line options
 # print ("**argv: ", sys.argv[1:])
-opts, args = getopt.getopt(sys.argv[1:], "i:u:p:v:bhds1:2:")
+# opts, args = getopt.getopt(sys.argv[1:], "i:u:p:v:bhds1:2:")
 # print ("**options: ", opts)
 
+### Options Handling
+parser = argparse.ArgumentParser()
+parser.add_argument('--fortigate', help='IP or hostname of fortigate')
+parser.add_argument('--fglist', help='alternative to --fortigate, provide path to file containing list of fortigates and\
+                                     vdoms')
+parser.add_argument('--fgport', default='443', help='port for fortigate if other than 443')
+parser.add_argument('--vdom', default='root', help='vdom to execute against if other than "root"')
+parser.add_argument('--login', default='admin', help='login username for fortigate')
+parser.add_argument('--pass', default='', help='login password for fortigate')
+parser.add_argument('--searchproto', choices=['tcp', 'TCP', 'udp', 'UDP', 'sctp', 'SCTP'], help='for --servicecheck,\
+                                                                                           provide a protocol to search\
+                                                                                           for (also requires \
+                                                                                           --servicecheck and \
+                                                                                           --searchport' )
+parser.add_argument('--searchport', type=int, choices=range(1,65535), help='for --servicecheck, provide a protocol to \
+                                                                            search for (also requires --servicecheck \
+                                                                            and --searchprotocol')
+parser.add_argument('--servicefile', help='for --servicecheck, provide path to file containing list of proto and port')
+parser.add_argument('--servicelist', help='path to file containing a list of services by name to check for in \
+                                           policies of the fortigate/vdom')
+parser.add_argument('--format', choices=['json', 'tsv', 'csv', 'pretty_json'], default=json, help='output format')
+parser.add_argument('--outfile', default='./output.txt', help='path to results file')
+args = parser.parse_args()
+
+### Check Options for validity and relationships
+if not args.fortigate and not args.fglist:
+    parser.error("requires one of --fortigate or --fglist")
+
+if not (args.searchproto and args.searchport):
+        if not args.servicefile and not args.servicelist:
+                 parser.error("require (--searchproto and --searchport) or --servicefile or --servicelist")
+if args.servicefile:
+    if not os.access(args.servicefile, os.R_OK):
+        parser.error("path/file specified with --servicefile "  + args.servicefile + " is not a readable file")
+
+if args.servicefile:
+    if not os.access(args.servicelist, os.R_OK):
+        parser.error("path/file specified with --servicelist " + args.servicelist + " is not a readable file")
+
 # set default values
-hostname = "10.0.2.1"
+hostname =
 username = "fortinetapi"
 password = "fortinetapi"
 vdom = "root"
-port1 = "port1"
-port2 = "port2"
 verbose = False
-undo = False
 serviceCheck = True
 policyServiceCheck = True
-resultTemplate = "{0:30}{1:30}{2:20}"
 searchport = 80
 searchproto = 'tcp'
 serviceMatch = []
 policyMatch = {}
 
 # parse args
-for opt, arg in opts:
-    # print ("*arg* " + opt + " : " + arg)
-    if opt in ('-h', '--help'):
-        print("***********************************************************************************")
-        print("Usage: python fgt-ops.py -i <device ip[:port]> -u <username> -p <password>")
-        print("")
-        print("  This script performs various operations against a Fortigate")
-        print("  Device IP, username, and password will be prompted for if left blank")
-        print("  everything is case sensitive")
-        print("")
-        print("  -i: for FG port other than 443, use -i ip:port, ie 192.168.1.99:8443")
-        print("")
-        print("  -p: to enter a password without echoing, leave the -p option out")
-        print("      if the password is blank  <8(   leave off the -p option and hit enter when prompted")
-        print("")
-        print("  -v: for vdom  (default = root)")
-        print("")
-        print("  For the policy:")
-        print("     -1: set from port  (default = port1)")
-        print("     -2: set to port  (default = port2)")
-        print("")
-        print("  -b : verbose outout")
-        print("")
-        print("  -s : search for service utilizations")
-        print("")
-        print("  -d : delete/undo all the changes being made")
-        print("")
-        print("***********************************************************************************")
-        print("examples:  ")
-        print("   python fgt-ops.py -i 192.168.1.99 -u api -p apiapi")
-        print("   python fgt-ops.py -i 192.168.1.99 -u admin -g")
-        print("   python fgt-ops.py -i 192.168.1.99 -u apiUser -p apiPasswd -d")
-        print("***********************************************************************************")
-        sys.exit(2)
-    elif opt == '-i':
-        hostname = arg
-    elif opt == '-b':
-        verbose = True
-    elif opt == '-u':
-        username = arg
-    elif opt == '-p':
-        password = arg
-    elif opt == '-v':
-        vdom = arg
-    elif opt == '-d':
-        undo = True
-    elif opt == '-s':
-        serviceCheck = True
-    elif opt == '-1':
-        port1 = arg
-    elif opt == '-2':
-        port2 = arg
+# for opt, arg in opts:
+#     # print ("*arg* " + opt + " : " + arg)
+#     if opt in ('-h', '--help'):
+#         print("***********************************************************************************")
+#         print("Usage: python fgt-ops.py -i <device ip[:port]> -u <username> -p <password>")
+#         print("")
+#         print("  This script performs various operations against a Fortigate")
+#         print("  Device IP, username, and password will be prompted for if left blank")
+#         print("  everything is case sensitive")
+#         print("")
+#         print("  -i: for FG port other than 443, use -i ip:port, ie 192.168.1.99:8443")
+#         print("")
+#         print("  -p: to enter a password without echoing, leave the -p option out")
+#         print("      if the password is blank  <8(   leave off the -p option and hit enter when prompted")
+#         print("")
+#         print("  -v: for vdom  (default = root)")
+#         print("")
+#         print("  For the policy:")
+#         print("     -1: set from port  (default = port1)")
+#         print("     -2: set to port  (default = port2)")
+#         print("")
+#         print("  -b : verbose outout")
+#         print("")
+#         print("  -s : search for service utilizations")
+#         print("")
+#         print("  -d : delete/undo all the changes being made")
+#         print("")
+#         print("***********************************************************************************")
+#         print("examples:  ")
+#         print("   python fgt-ops.py -i 192.168.1.99 -u api -p apiapi")
+#         print("   python fgt-ops.py -i 192.168.1.99 -u admin -g")
+#         print("   python fgt-ops.py -i 192.168.1.99 -u apiUser -p apiPasswd -d")
+#         print("***********************************************************************************")
+#         sys.exit(2)
+#     elif opt == '-i':
+#         hostname = arg
+#     elif opt == '-b':
+#         verbose = True
+#     elif opt == '-u':
+#         username = arg
+#     elif opt == '-p':
+#         password = arg
+#     elif opt == '-v':
+#         vdom = arg
+#     elif opt == '-d':
+#         undo = True
+#     elif opt == '-s':
+#         serviceCheck = True
+#     elif opt == '-1':
+#         port1 = arg
+#     elif opt == '-2':
+#         port2 = arg
 
 if verbose: print("****** arguments *******")
 if verbose: print("host: " + hostname)
