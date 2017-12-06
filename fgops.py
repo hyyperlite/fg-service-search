@@ -174,17 +174,18 @@ def findService(service, searchproto, searchport):
 
 ### Function to find match from list of services provided to services contained in policy
 def findPolicyService(policies, service):
-    policyids = []
-    print('*********hi')
+    policymatch = []
+
     for policy in policies:
-        if service in policies[policy][service]:
-            # policyids.append()
-            print('##########TEST##############')
-            policyids.append(policies[policy][policyid])
-    if len(policyids) > 0:
-        return policyids
+        for fgservice in policy['service']:
+            if service == fgservice['name']:
+                policymatch.append(policy['policyid'])
+
+    if len(policymatch) > 0:
+        return policymatch
     else:
         return False
+
 
 try:
     for fg in fortigates:
@@ -209,10 +210,8 @@ try:
                         if not lprotoport in serviceMatch.keys():
                             serviceMatch[lprotoport] = []
 
-                        serviceMatch[lprotoport].append({'fgservice': [{'name': result, 'policymatch': []}]})
-                        serviceMatch[lprotoport].append({'fgaddrgrp': [{'name': '', 'fgservice': [], 'policymatch': []}]})
-                        serviceMatch[lprotoport].append({'fgvip': [{'name': '', 'policymatch': []}]})
-                        serviceMatch[lprotoport].append({'fgvipgrp': [{'name': '', 'policymatch': []}]})
+                        serviceMatch[lprotoport].append({result : {'type': 'fgservice', 'policymatch': []}})
+
         print(serviceMatch)
 
 
@@ -222,23 +221,24 @@ try:
             # Query the FG for defined policies
             response = fgt.get('cmdb', 'firewall', 'policy')
             json_response = json.loads(response)
-            #print(json.dumps(json_response['results'], indent=2, sort_keys=True))
+            # print(json.dumps(json_response['results'], indent=2, sort_keys=True))
 
             for protoport in serviceMatch:
-                for services in serviceMatch[protoport]:
-                    for y in x:
-                        print(y)
-                    # if  > 0:
-                    #     result = findPolicyService(json_response, fgservice['name'])
-            #
-            # if result:
-            #     serviceMatch[result]['fgpolicy'].append(policy['policyid'])
+                for service_key, service_value in enumerate(serviceMatch[protoport]):
+                    for svc_key, svc_value in service_value.items():
+                        if svc_value['type'] == 'fgservice':
+                            result = findPolicyService(json_response['results'], svc_key)
+                            if result:
+                                serviceMatch[protoport][service_key][svc_key]['policymatch'].append(result)
 
-        print(serviceMatch)
+
+            print('*****************************')
+            print('*****************************')
+            # print(json.dumps(serviceMatch, indent=2, sort_keys=True))
+            print(serviceMatch)
 
 
         fgt.logout()
-
 # on exception, try to log out
 except:
     print("****** EXCEPTION *******")
