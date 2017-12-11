@@ -198,13 +198,14 @@ def findPolicyService(policies, service):
 
 try:
     for fg in fortigates:
-        serviceMatch = {}
+        serviceMatch = {}  # Dict that we'll store all match info in
         print('fg: ' + str(fg))
         fgt = FortiOSREST()
         #if verbose: fgt.debug('on')
         result = fgt.login(fortigates[fg]['host'], fortigates[fg]['login'], fortigates[fg]['passwd'])
 
         if serviceCheck:
+            # Get list of all custom services defined on fortigate
             response = fgt.get('cmdb', 'firewall.service', 'custom', parameters={'vdom': fortigates[fg]['vdom']})
             json_response = json.loads(response)
 
@@ -220,9 +221,33 @@ try:
                         if not lprotoport in serviceMatch.keys():
                             serviceMatch[lprotoport] = []
 
-                        serviceMatch[lprotoport].append({result : {'type': 'fgservice', 'policymatch': []}})
+                        serviceMatch[lprotoport].append({result : {'type': 'fgservice', 'policymatch': [], 'groups': []}})
 
-        print(serviceMatch)
+            ## Also need to check if any of the services that were matched are in an address group
+            ## If so then we'll store those address groups, and later check to see if those are used
+            ## in a policy
+            response = fgt.get('cmdb', 'firewall.service', 'group', parameters={'vdom': fortigates[fg]['vdom']})
+            json_response = json.loads(response)
+
+            for group in json_response['results']:
+                for member in group['member']:
+                    for protoport in serviceMatch:
+                        for service_key, service_val in enumerate(serviceMatch[protoport]):
+                            for svc_key, svc_val in service_val.items():
+                                if svc_val['type'] == 'fgservice':
+                                    if svc_key == member['name']:
+                                        #print('match: ' + member['name'] + ' in svc group: ' + str(group['name']))
+
+                                        # add new fgservice group entry to serviceMatch
+                                        serviceMatch[protoport].append({group['name'] : {'type': 'fgservicegrp'}})
+
+                                        # update existing service object with related servicegroup map
+                                        serviceMatch[protoport][service_key][svc_key]['groups'].append(group['name'])
+
+        #print(serviceMatch)
+        print(json.dumps(serviceMatch, indent=2, sort_keys=True))
+
+
 
 
         # Given a list of service objects, check to see if any policies use the service objects
@@ -245,7 +270,7 @@ try:
             # print('*****************************')
             # print('*****************************')
             # print(json.dumps(serviceMatch, indent=2, sort_keys=True))
-            print(serviceMatch)
+            #print(serviceMatch)
 
 
         fgt.logout()
