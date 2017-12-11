@@ -6,7 +6,9 @@ import sys
 import base64
 import os
 
+##########################
 ### Options Handling
+##########################
 parser = argparse.ArgumentParser()
 parser.add_argument('--fortigate', help='IP or hostname of fortigate')
 parser.add_argument('--fglist', help='alternative to --fortigate, provide path to file containing list of fortigates '
@@ -100,6 +102,7 @@ elif args.fortigate:
 if args.servicefile:
     x = 0
     for line in servicefile:
+        line = line.rstrip()
         protocol, port = line.split('/')
         portproto[x] = {'protocol': protocol.lower(), 'port': port.lower()}
         x = x + 1
@@ -127,6 +130,7 @@ def findService(service, searchproto, searchport):
     prange = searchproto + '-portrange'
     lowport = []
     highport = []
+
 
     # Check if object is associated to protocol being searched for
     if service[prange] == '':
@@ -158,6 +162,7 @@ def findService(service, searchproto, searchport):
             lowport = dports
             highport = dports
 
+
     # Created a list of low ports and high ports for this object, now analyze each to identify if
     # the protocol/port we are searching for falls in any of the ranges provided.  (note, we do not yet
     # consider source ports)
@@ -166,8 +171,10 @@ def findService(service, searchproto, searchport):
         #     prange] + "\t" + str(service['protocol-number']))
         if int(service['protocol-number']) not in allowedprotos:
             return False
-        if (int(lowport[idx]) <= searchport) and (searchport <= int(highport[idx])):
-            print(str(searchproto) + "/" + str(searchport) + " MATCH " + service['name'] + "\t" + service[prange] + "\t" + str(service['protocol-number']))
+
+        if (int(lowport[idx]) <= int(searchport)) and (int(searchport) <= int(highport[idx])):
+            # print('test')
+            # print(str(searchproto) + "/" + str(searchport) + " MATCH " + service['name'] + "\t" + service[prange] + "\t" + str(service['protocol-number']))
             return service['name']
         else:
             return False
@@ -196,7 +203,8 @@ try:
         result = fgt.login(fg, fortigates[fg]['login'], fortigates[fg]['passwd'])
 
         if serviceCheck:
-            response = fgt.get('cmdb', 'firewall.service', 'custom')
+            #response = fgt.get('cmdb', 'firewall.service', 'custom')
+            response = fgt.get('cmdb', 'firewall.service', 'custom', parameters={'vdom':'root'})
             json_response = json.loads(response)
 
             # For each service object returned from FG, search for protocol/port match
@@ -205,6 +213,7 @@ try:
                     lproto = portproto[item]['protocol']
                     lport = portproto[item]['port']
                     lprotoport = lproto + "/" + str(lport)
+
                     result = findService(fgsvc, lproto, lport)
                     if result:
                         if not lprotoport in serviceMatch.keys():
@@ -232,8 +241,8 @@ try:
                                 serviceMatch[protoport][service_key][svc_key]['policymatch'].append(result)
 
 
-            print('*****************************')
-            print('*****************************')
+            # print('*****************************')
+            # print('*****************************')
             # print(json.dumps(serviceMatch, indent=2, sort_keys=True))
             print(serviceMatch)
 
