@@ -92,8 +92,10 @@ svcsbyname = []    # List to contain named services to search for
 # Create the list of fortigates from file, or if no file, from cli arguments
 if args.fglist:
     for line in fglist:
-        fg,login,passwd = line.split()
-        fortigates[fg] = {'login': login, 'passwd': passwd}
+        # fg,login,passwd = line.split()
+        # fortigates[fg] = {'login': login, 'passwd': passwd}
+        fg,vdom,login,passwd = line.split()
+        fortigates[fg + '-' + vdom] = {'host': fg, 'vdom': vdom, 'login': login, 'passwd': passwd}
     fglist.close()
 elif args.fortigate:
     fortigates[args.fortigate] = {'login': args.login, 'passwd': args.passwd}
@@ -200,11 +202,10 @@ try:
         print('fg: ' + str(fg))
         fgt = FortiOSREST()
         #if verbose: fgt.debug('on')
-        result = fgt.login(fg, fortigates[fg]['login'], fortigates[fg]['passwd'])
+        result = fgt.login(fortigates[fg]['host'], fortigates[fg]['login'], fortigates[fg]['passwd'])
 
         if serviceCheck:
-            #response = fgt.get('cmdb', 'firewall.service', 'custom')
-            response = fgt.get('cmdb', 'firewall.service', 'custom', parameters={'vdom':'root'})
+            response = fgt.get('cmdb', 'firewall.service', 'custom', parameters={'vdom': fortigates[fg]['vdom']})
             json_response = json.loads(response)
 
             # For each service object returned from FG, search for protocol/port match
@@ -228,7 +229,7 @@ try:
         # If there is a match, we will add the policyid of the matching rule to the services object data
         if policyServiceCheck:
             # Query the FG for defined policies
-            response = fgt.get('cmdb', 'firewall', 'policy')
+            response = fgt.get('cmdb', 'firewall', 'policy', parameters={'vdom': fortigates[fg]['vdom']})
             json_response = json.loads(response)
             # print(json.dumps(json_response['results'], indent=2, sort_keys=True))
 
