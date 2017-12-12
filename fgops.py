@@ -1,49 +1,49 @@
 from ftntlib import FortiOSREST
+from datetime import datetime
 import json
 import argparse
-#import ssl
-#import sys
-import base64
 import os
 
 ##########################
-### Options Handling
+# Options Handling
 ##########################
 parser = argparse.ArgumentParser()
 parser.add_argument('--fortigate', help='IP or hostname of fortigate')
 parser.add_argument('--fglist', help='alternative to --fortigate, provide path to file containing list of fortigates '
-                                     'and vdoms')
+                        'and vdoms')
 
 parser.add_argument('--fgport', default='443', help='port for fortigate if other than 443')
 parser.add_argument('--vdom', default='root', help='vdom to execute against if other than "root"')
 parser.add_argument('--login', default='admin', help='login username for fortigate')
 parser.add_argument('--passwd', default='admin', help='login password for fortigate')
 parser.add_argument('--searchproto', choices=['tcp', 'TCP', 'udp', 'UDP', 'sctp', 'SCTP'], help='for --servicecheck, '
-                                    'provide a protocol to search for (also requires --servicecheck and --searchport')
+                        'provide a protocol to search for (also requires --servicecheck and --searchport')
 
-parser.add_argument('--searchport', type=int, choices=range(1,65535), help='for --servicecheck, provide a protocol to '
-                                                        'search for (also requires --servicecheck and --searchprotocol')
+parser.add_argument('--searchport', type=int, choices=range(1, 65535), help='for --servicecheck, provide a protocol to '
+                        'search for (also requires --servicecheck and --searchprotocol')
 
 parser.add_argument('--servicefile', help='for --servicecheck, provide path to file containing list of proto and port')
 parser.add_argument('--servicelist', help='path to file containing a list of services by name to check for in '
-                                          'policies of the fortigate/vdom')
+                        'policies of the fortigate/vdom')
 
-parser.add_argument('--format', choices=['json', 'tsv', 'csv', 'pretty_json'], default='json', help='output format')
+parser.add_argument('--format', choices=['json', 'json_pretty'], default='json', help='output format')
 parser.add_argument('--outfile', default='./output.txt', help='path to results file')
+parser.add_argument('--outfiletype', default='w', choices=['w', 'a'], help='w=overwrite file, a=append to file')
+
 args = parser.parse_args()
 
-### Check Options for validity and relationships
+# Check Options for validity and relationships
 if not args.fortigate and not args.fglist:
     parser.error("requires one of --fortigate or --fglist")
 
 if not (args.searchproto and args.searchport):
         if not args.servicefile and not args.servicelist:
-                 parser.error('require (--searchproto and --searchport) or --servicefile or --servicelist')
+            parser.error('require (--searchproto and --searchport) or --servicefile or --servicelist')
 
 if args.servicefile and args.servicelist:
     parser.error('may only specify one of --servicefile or --servicelist not both')
 
-### Check and Open Files for r/w
+# Check and Open Files for r/w
 if args.fglist:
     if not os.access(args.fglist, os.R_OK):
         parser.error('path/file specified with --fglist " + args.fglist + " is not a readable file')
@@ -76,23 +76,36 @@ if args.servicelist:
 
 if args.outfile:
     try:
-        outfile = open(args.outfile, 'w+')
+        if args.outfiletype == 'a':
+            outfile = open(args.outfile, 'a')
+        else:
+            outfile = open(args.outfile, 'w+')
     except IOError:
         print('Could not create file for writing:', args.outfile)
         sys.exit()
 
-##################################################
-#### Main Processing
-#################################################
-## Create lists / dicts based on input
+
+# Instantiate needed vars, lists and dicts
+serviceMatch = {}
+policyMatch = {}
+serviceCheck = True
+policyCheck = True
+vipCheck = True
+verbose = False
+allowedprotos = [6, 17, 132]
+allowedprotosname = ['tcp', 'udp', 'sctp']
+
+
+# Create lists / dicts based on cli input
 fortigates = {}      # Dictionary to contain list of fortigates, logins, passwds
 portproto = {}   # Dictionary to contain list of protocol and ports to search for
 svcsbyname = []    # List to contain named services to search for
 
+
 # Create the list of fortigates from file, or if no file, from cli arguments
 if args.fglist:
     for line in fglist:
-        fg,vdom,login,passwd = line.split()
+        fg, vdom, login, passwd = line.split()
         fortigates[fg + '-' + vdom] = {'host': fg, 'vdom': vdom, 'login': login, 'passwd': passwd}
     fglist.close()
 elif args.fortigate:
@@ -105,7 +118,7 @@ if args.servicefile:
         line = line.rstrip()
         protocol, port = line.split('/')
         portproto[x] = {'protocol': protocol.lower(), 'port': port.lower()}
-        x = x + 1
+        x += 1
     servicefile.close()
 elif args.searchproto and args.searchport:
     portproto[0] = {'protocol': args.searchproto, 'port': args.searchport}
@@ -116,16 +129,10 @@ if args.servicelist:
         svcsbyname.append(line.rstrip())
     servicelist.close()
 
-# Instantiate needed vars, lists and dicts
-serviceMatch = {}
-policyMatch = {}
-serviceCheck = False
-policyCheck = True
-vipCheck = True
-# verbose = True
-allowedprotos = [6, 17, 132]
-allowedprotosname = ['tcp', 'udp', 'sctp']
 
+#################################################
+# Function definitions
+#################################################
 
 # Function to identify if a given service object will match for a specified protocol/port
 def find_service(service, searchproto, searchport):
@@ -194,9 +201,9 @@ def find_vip(vip, searchproto, searchport):
 
     # '-' delineates lowport and highport if a range is given
     if '-' in dports:
-        low, high = dports.split('-')
-        lowport = low
-        highport = high
+        lowport, highport = dports.split('-')
+        #lowport = low
+        #highport = high
     else:
         lowport = dports
         highport = dports
@@ -232,12 +239,15 @@ def find_policy_match(policies, searchitem, objtype):
         return False
 
 
+##################################################
+#### Main Processing
+#################################################
+
 try:
     for fg in fortigates:
         serviceMatch = {}  # Dict that we'll store all match info in
         # print('fg: ' + str(fg))
         fgt = FortiOSREST()
-        # if verbose: fgt.debug('on')
         result = fgt.login(fortigates[fg]['host'], fortigates[fg]['login'], fortigates[fg]['passwd'])
 
         ############################################
@@ -310,6 +320,28 @@ try:
 
                         serviceMatch[protoport].append({result: {'type': 'fgvip', 'policymatch': [], 'groups': []}})
 
+            #######################################
+            # VIP Group Matching
+            #######################################
+            # Also need to check if any of the services that were matched are in an address group
+            # If so then we'll store those address groups, and later check to see if those are used
+            # in a policy
+            response = fgt.get('cmdb', 'firewall', 'vipgrp', parameters={'vdom': fortigates[fg]['vdom']})
+            json_response = json.loads(response)
+            for group in json_response['results']:
+                for member in group['member']:
+                    for protoport in serviceMatch:
+                        for service_key, service_val in enumerate(serviceMatch[protoport]):
+                            for svc_key, svc_val in service_val.items():
+                                if svc_val['type'] == 'fgvip':
+                                    if svc_key == member['name']:
+                                        # add new fgservice group entry to serviceMatch
+                                        serviceMatch[protoport].append({group['name']: {'type': 'fgvipgrp',
+                                                                                                'policymatch': []}})
+
+                                        # update existing service object with related servicegroup map
+                                        serviceMatch[protoport][service_key][svc_key]['groups'].append(group['name'])
+
         ##########################################
         # Policy Matching
         ##########################################
@@ -327,13 +359,27 @@ try:
                         if result:
                             serviceMatch[protoport][service_key][svc_key]['policymatch'].append(result)
 
+        ########################################
+        # Results Output
+        ########################################
         serviceMatch['fortigate'] = fortigates[fg]['host']
         serviceMatch['vdom'] = fortigates[fg]['vdom']
-        print(json.dumps(serviceMatch, indent=2, sort_keys=True))
-        # print(serviceMatch)
+        serviceMatch['date-time'] = str(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
+        if args.format == 'json_pretty':
+            #print(json.dumps(serviceMatch, indent=2, sort_keys=True))
+            outfile.write(json.dumps(serviceMatch, indent=2, sort_keys=True))
+        else:
+            #print(json.dumps(serviceMatch))
+            outfile.write(json.dumps(serviceMatch))
+
+        #outfile.flush()
         fgt.logout()
-# on exception, try to log out
-except:
-    print("****** EXCEPTION *******")
+
+    if outfile: outfile.close()
+
+# If exception, close attempt close fg connection and print exception msg
+except Exception as e:
+    print('****** EXCEPTION *******')
+    print(e)
     fgt.logout()
