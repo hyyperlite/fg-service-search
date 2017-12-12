@@ -10,26 +10,22 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument('--fortigate', help='IP or hostname of fortigate')
 parser.add_argument('--fglist', help='alternative to --fortigate, provide path to file containing list of fortigates '
-                        'and vdoms')
+                        'vdoms, username and passwords')
 
 parser.add_argument('--fgport', default='443', help='port for fortigate if other than 443')
 parser.add_argument('--vdom', default='root', help='vdom to execute against if other than "root"')
 parser.add_argument('--login', default='admin', help='login username for fortigate')
 parser.add_argument('--passwd', default='admin', help='login password for fortigate')
-parser.add_argument('--searchproto', choices=['tcp', 'TCP', 'udp', 'UDP', 'sctp', 'SCTP'], help='for --servicecheck, '
-                        'provide a protocol to search for (also requires --servicecheck and --searchport')
+parser.add_argument('--searchproto', choices=['tcp', 'TCP', 'udp', 'UDP', 'sctp', 'SCTP'], help=''
+                        'provide a protocol to search for (also requires --searchport')
 
-parser.add_argument('--searchport', type=int, choices=range(1, 65535), help='for --servicecheck, provide a protocol to '
-                        'search for (also requires --servicecheck and --searchprotocol')
+parser.add_argument('--searchport', type=int, help=''
+                        'a protocol to search for (also requires --searchprotocol')
 
-parser.add_argument('--servicefile', help='for --servicecheck, provide path to file containing list of proto and port')
-parser.add_argument('--servicelist', help='path to file containing a list of services by name to check for in '
-                        'policies of the fortigate/vdom')
-
+parser.add_argument('--servicefile', help='provide path to file containing list of proto and port')
 parser.add_argument('--format', choices=['json', 'json_pretty'], default='json', help='output format')
 parser.add_argument('--outfile', default='./output.txt', help='path to results file')
 parser.add_argument('--outfiletype', default='w', choices=['w', 'a'], help='w=overwrite file, a=append to file')
-
 args = parser.parse_args()
 
 # Check Options for validity and relationships
@@ -37,11 +33,11 @@ if not args.fortigate and not args.fglist:
     parser.error("requires one of --fortigate or --fglist")
 
 if not (args.searchproto and args.searchport):
-        if not args.servicefile and not args.servicelist:
-            parser.error('require (--searchproto and --searchport) or --servicefile or --servicelist')
-
-if args.servicefile and args.servicelist:
-    parser.error('may only specify one of --servicefile or --servicelist not both')
+        if not args.servicefile:
+            parser.error('require (--searchproto and --searchport) or --servicefile')
+else:
+    if args.searchport not in range(1, 65535):
+        parser.error('--searchport must be in range of 1 to 65535')
 
 # Check and Open Files for r/w
 if args.fglist:
@@ -64,15 +60,6 @@ if args.servicefile:
             print('Could not read file:', args.servicefile)
             sys.exit()
 
-if args.servicelist:
-    if not os.access(args.servicelist, os.R_OK):
-        parser.error('path/file specified with --servicelist " + args.servicelist + " is not a readable file')
-    else:
-        try:
-            servicelist = open(args.servicelist, 'r')
-        except IOError:
-            print('Could not read file:', args.servicelist)
-            sys.exit()
 
 if args.outfile:
     try:
@@ -123,11 +110,6 @@ if args.servicefile:
 elif args.searchproto and args.searchport:
     portproto[0] = {'protocol': args.searchproto, 'port': args.searchport}
 
-# Create list of services to search for by name if --servicelist
-if args.servicelist:
-    for line in servicelist:
-        svcsbyname.append(line.rstrip())
-    servicelist.close()
 
 
 #################################################
