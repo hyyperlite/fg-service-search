@@ -1,0 +1,2 @@
+10.0.2.1 root fortinetapi fortinetapi
+192.168.1.1 root fortinetapi fortinetapi

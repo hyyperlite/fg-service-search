@@ -1,0 +1,6 @@
+tcp/53
+tcp/80
+tcp/443
+udp/87
+udp/514
+tcp/445
