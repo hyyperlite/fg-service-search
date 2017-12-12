@@ -26,12 +26,10 @@ parser.add_argument('--searchport', type=int, help=''
 parser.add_argument('--servicelist', help='provide path to file containing list of proto and port')
 parser.add_argument('--format', choices=['json', 'json_pretty'], default='json', help='output format')
 parser.add_argument('--outfile', default='./output.txt', help='path to results file')
-parser.add_argument('--outfiletype', default='w', choices=['w', 'a'], help='w=overwrite file, a=append to file')
+parser.add_argument('--outfilemode', default='w', choices=['w', 'a'], help='w=overwrite file, a=append to file')
 args = parser.parse_args()
 
 # Instantiate other needed vars, lists and dicts
-serviceMatch = {}
-policyMatch = {}
 serviceCheck = True
 policyCheck = True
 vipCheck = True
@@ -84,7 +82,7 @@ if args.servicelist:
 # Since outfile may not already exist we try to open it and catch exceptions, exiting on exception
 if args.outfile:
     try:
-        if args.outfiletype == 'a':
+        if args.outfilemode == 'a':
             outfile = open(args.outfile, 'a')
         else:
             outfile = open(args.outfile, 'w+')
@@ -235,6 +233,7 @@ def find_policy_match(policies, searchitem, objtype):
 try:
     # Iterate through each FortiGate/VDOM combination loaded from CLI or from fortigates file list
     for fg in fortigates:
+        print("Processing fortigate-vdom: " + fg)
         serviceMatch = {}  # Dict to store all matching object info
         fgt = FortiOSREST()
         result = fgt.login(fortigates[fg]['host'], fortigates[fg]['login'], fortigates[fg]['passwd'])
@@ -366,7 +365,9 @@ try:
         outfile.flush()
         fgt.logout()
 
-    if outfile: outfile.close()
+    print('***********************************************')
+    print('Completed, results written to: ' + os.path.abspath(args.outfile))
+    outfile.close()
 
 # If exception, close attempt close fg connection and print exception msg
 except Exception as e:
