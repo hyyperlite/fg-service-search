@@ -238,7 +238,7 @@ try:
         if serviceCheck:
             # Get list of all custom services defined on fortigate
             response = fgt.get('cmdb', 'firewall.service', 'custom', parameters={'vdom': fortigates[fg]['vdom']})
-            json_response = json.loads(response)
+            json_response = json.loads(response.decode())
 
             # For each service object returned from FG, search for protocol/port match
             for fgsvc in json_response['results']:
@@ -262,7 +262,7 @@ try:
             # If so then we'll store those address groups, and later check to see if those are used
             # in a policy
             response = fgt.get('cmdb', 'firewall.service', 'group', parameters={'vdom': fortigates[fg]['vdom']})
-            json_response = json.loads(response)
+            json_response = json.loads(response.decode())
 
             for group in json_response['results']:
                 for member in group['member']:
@@ -285,7 +285,7 @@ try:
         if vipCheck:
             # Get list of all vips defined on fortigate
             response = fgt.get('cmdb', 'firewall', 'vip', parameters={'vdom': fortigates[fg]['vdom']})
-            json_response = json.loads(response)
+            json_response = json.loads(response.decode())
 
             # For each vip object returned from FG, search for port match
             for fgvip in json_response['results']:
@@ -309,7 +309,7 @@ try:
             # If so then we'll store those address groups, and later check to see if those are used
             # in a policy
             response = fgt.get('cmdb', 'firewall', 'vipgrp', parameters={'vdom': fortigates[fg]['vdom']})
-            json_response = json.loads(response)
+            json_response = json.loads(response.decode())
             for group in json_response['results']:
                 for member in group['member']:
                     for protoport in serviceMatch:
@@ -332,7 +332,7 @@ try:
         if policyCheck:
             # Query the FG for defined policies
             response = fgt.get('cmdb', 'firewall', 'policy', parameters={'vdom': fortigates[fg]['vdom']})
-            json_response = json.loads(response)
+            json_response = json.loads(response.decode())
 
             for protoport in serviceMatch:
                 for service_key, service_value in enumerate(serviceMatch[protoport]):
