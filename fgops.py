@@ -14,8 +14,8 @@ parser.add_argument('--fglist', help='alternative to --fortigate, provide path t
 
 parser.add_argument('--fgport', default='443', help='port for fortigate if other than 443')
 parser.add_argument('--vdom', default='root', help='vdom to execute against if other than "root"')
-parser.add_argument('--login', default='admin', help='login username for fortigate')
-parser.add_argument('--passwd', default='admin', help='login password for fortigate')
+parser.add_argument('--login', help='login username for fortigate')
+parser.add_argument('--passwd', help='login password for fortigate')
 parser.add_argument('--searchproto', choices=['tcp', 'TCP', 'udp', 'UDP', 'sctp', 'SCTP'], help=''
                         'provide a protocol to search for (also requires --searchport')
 
@@ -28,9 +28,28 @@ parser.add_argument('--outfile', default='./output.txt', help='path to results f
 parser.add_argument('--outfiletype', default='w', choices=['w', 'a'], help='w=overwrite file, a=append to file')
 args = parser.parse_args()
 
+# Instantiate other needed vars, lists and dicts
+serviceMatch = {}
+policyMatch = {}
+serviceCheck = True
+policyCheck = True
+vipCheck = True
+verbose = False
+allowedprotos = [6, 17, 132]
+allowedprotosname = ['tcp', 'udp', 'sctp']
+
+# Create lists / dicts based on cli input
+fortigates = {}      # Dictionary to contain list of fortigates, logins, passwds
+portproto = {}   # Dictionary to contain list of protocol and ports to search for
+svcsbyname = []    # List to contain named services to search for
+
+
 # Check Options for validity and relationships
 if not args.fortigate and not args.fglist:
     parser.error("requires one of --fortigate or --fglist")
+elif args.fortigate:
+    if not args.login and args.passwd:
+        parser.error("when using --fortigate, must also provide --login and --passwd")
 
 if not (args.searchproto and args.searchport):
         if not args.servicefile:
@@ -60,7 +79,6 @@ if args.servicefile:
             print('Could not read file:', args.servicefile)
             sys.exit()
 
-
 if args.outfile:
     try:
         if args.outfiletype == 'a':
@@ -71,24 +89,6 @@ if args.outfile:
         print('Could not create file for writing:', args.outfile)
         sys.exit()
 
-
-# Instantiate needed vars, lists and dicts
-serviceMatch = {}
-policyMatch = {}
-serviceCheck = True
-policyCheck = True
-vipCheck = True
-verbose = False
-allowedprotos = [6, 17, 132]
-allowedprotosname = ['tcp', 'udp', 'sctp']
-
-
-# Create lists / dicts based on cli input
-fortigates = {}      # Dictionary to contain list of fortigates, logins, passwds
-portproto = {}   # Dictionary to contain list of protocol and ports to search for
-svcsbyname = []    # List to contain named services to search for
-
-
 # Create the list of fortigates from file, or if no file, from cli arguments
 if args.fglist:
     for line in fglist:
@@ -96,7 +96,8 @@ if args.fglist:
         fortigates[fg + '-' + vdom] = {'host': fg, 'vdom': vdom, 'login': login, 'passwd': passwd}
     fglist.close()
 elif args.fortigate:
-    fortigates[args.fortigate] = {'login': args.login, 'passwd': args.passwd}
+    fortigates[args.fortigate + '-' + args.vdom] = {'host': args.fortigate, 'vdom': args.vdom,
+                                                    'login': args.login, 'passwd': args.passwd}
 
 # Create list of proto/port to seach for from file, or if no file specified from cli arguments
 if args.servicefile:
@@ -227,8 +228,7 @@ def find_policy_match(policies, searchitem, objtype):
 
 try:
     for fg in fortigates:
-        serviceMatch = {}  # Dict that we'll store all match info in
-        # print('fg: ' + str(fg))
+        serviceMatch = {}  # Dict to store all matching object info
         fgt = FortiOSREST()
         result = fgt.login(fortigates[fg]['host'], fortigates[fg]['login'], fortigates[fg]['passwd'])
 
@@ -355,7 +355,7 @@ try:
             #print(json.dumps(serviceMatch))
             outfile.write(json.dumps(serviceMatch))
 
-        #outfile.flush()
+        outfile.flush()
         fgt.logout()
 
     if outfile: outfile.close()
