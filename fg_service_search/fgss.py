@@ -3,6 +3,7 @@ from datetime import datetime
 import json
 import argparse
 import os
+import sys
 
 ##########################
 # Options Handling
@@ -22,7 +23,7 @@ parser.add_argument('--searchproto', choices=['tcp', 'TCP', 'udp', 'UDP', 'sctp'
 parser.add_argument('--searchport', type=int, help=''
                         'a protocol to search for (also requires --searchprotocol')
 
-parser.add_argument('--servicefile', help='provide path to file containing list of proto and port')
+parser.add_argument('--servicelist', help='provide path to file containing list of proto and port')
 parser.add_argument('--format', choices=['json', 'json_pretty'], default='json', help='output format')
 parser.add_argument('--outfile', default='./output.txt', help='path to results file')
 parser.add_argument('--outfiletype', default='w', choices=['w', 'a'], help='w=overwrite file, a=append to file')
@@ -52,33 +53,35 @@ elif args.fortigate:
         parser.error("when using --fortigate, must also provide --login and --passwd")
 
 if not (args.searchproto and args.searchport):
-        if not args.servicefile:
-            parser.error('require (--searchproto and --searchport) or --servicefile')
+        if not args.servicelist:
+            parser.error('require (--searchproto and --searchport) or --servicelist')
 else:
     if args.searchport not in range(1, 65535):
         parser.error('--searchport must be in range of 1 to 65535')
 
 # Check and Open Files for r/w
+# For read-only files check to make sure that they exist before attempting to open them
 if args.fglist:
     if not os.access(args.fglist, os.R_OK):
-        parser.error('path/file specified with --fglist " + args.fglist + " is not a readable file')
+        parser.error('path/file specified with --fglist ' + args.fglist + ' is not a readable file')
     else:
         try:
             fglist = open(args.fglist, 'r')
         except IOError:
             print('Could not read file:', args.fglist)
-            sys.exit()
+            sys.exit(1)
 
-if args.servicefile:
-    if not os.access(args.servicefile, os.R_OK):
-        parser.error('path/file specified with --servicefile " + args.servicefile + " is not a readable file')
+if args.servicelist:
+    if not os.access(args.servicelist, os.R_OK):
+        parser.error('path/file specified with --servicelist ' + args.servicelist + ' is not a readable file')
     else:
         try:
-            servicefile = open(args.servicefile, 'r')
+            servicelist = open(args.servicelist, 'r')
         except IOError:
-            print('Could not read file:', args.servicefile)
-            sys.exit()
+            print('Could not read file:', args.servicelist)
+            sys.exit(1)
 
+# Since outfile may not already exist we try to open it and catch exceptions, exiting on exception
 if args.outfile:
     try:
         if args.outfiletype == 'a':
@@ -87,7 +90,7 @@ if args.outfile:
             outfile = open(args.outfile, 'w+')
     except IOError:
         print('Could not create file for writing:', args.outfile)
-        sys.exit()
+        sys.exit(1)
 
 # Create the list of fortigates from file, or if no file, from cli arguments
 if args.fglist:
@@ -99,15 +102,15 @@ elif args.fortigate:
     fortigates[args.fortigate + '-' + args.vdom] = {'host': args.fortigate, 'vdom': args.vdom,
                                                     'login': args.login, 'passwd': args.passwd}
 
-# Create list of proto/port to seach for from file, or if no file specified from cli arguments
-if args.servicefile:
+# Create list of proto/port to search for from file, or if no file specified from cli arguments
+if args.servicelist:
     x = 0
-    for line in servicefile:
+    for line in servicelist:
         line = line.rstrip()
         protocol, port = line.split('/')
         portproto[x] = {'protocol': protocol.lower(), 'port': port.lower()}
         x += 1
-    servicefile.close()
+    servicelist.close()
 elif args.searchproto and args.searchport:
     portproto[0] = {'protocol': args.searchproto, 'port': args.searchport}
 
@@ -205,10 +208,12 @@ def find_policy_match(policies, searchitem, objtype):
     policymatch = []
 
     for policy in policies:
+        # For services, we search policies for a match in the "service" field
         if objtype == 'fgservice' or objtype == 'fgservicegrp':
             for fgobject in policy['service']:
                 if searchitem == fgobject['name']:
                     policymatch.append(policy['policyid'])
+        # For VIPs were search policies for a match in the "dstaddr" field
         elif objtype == 'fgvip' or objtype == 'fgvipgrp':
             for fgobject in policy['dstaddr']:
                 if searchitem == fgobject['name']:
@@ -216,6 +221,7 @@ def find_policy_match(policies, searchitem, objtype):
         else:
             continue
 
+    # If results were found, they were added to the policymatch list, return the list
     if len(policymatch) > 0:
         return policymatch
     else:
@@ -227,6 +233,7 @@ def find_policy_match(policies, searchitem, objtype):
 #################################################
 
 try:
+    # Iterate through each FortiGate/VDOM combination loaded from CLI or from fortigates file list
     for fg in fortigates:
         serviceMatch = {}  # Dict to store all matching object info
         fgt = FortiOSREST()
@@ -305,11 +312,12 @@ try:
             #######################################
             # VIP Group Matching
             #######################################
-            # Also need to check if any of the services that were matched are in an address group
-            # If so then we'll store those address groups, and later check to see if those are used
+            # Also need to check if any of the vips that were matched are in an vip group
+            # If so then we'll store those vip groups, and later check to see if those are used
             # in a policy
             response = fgt.get('cmdb', 'firewall', 'vipgrp', parameters={'vdom': fortigates[fg]['vdom']})
             json_response = json.loads(response.decode())
+
             for group in json_response['results']:
                 for member in group['member']:
                     for protoport in serviceMatch:
