@@ -113,7 +113,6 @@ elif args.searchproto and args.searchport:
     portproto[0] = {'protocol': args.searchproto, 'port': args.searchport}
 
 
-
 #################################################
 # Function definitions
 #################################################
