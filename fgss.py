@@ -29,7 +29,7 @@ parser.add_argument('--outfile', default='./output.txt', help='path to results f
 parser.add_argument('--outfilemode', default='w', choices=['w', 'a'], help='w=overwrite file, a=append to file')
 args = parser.parse_args()
 
-# Instantiate other needed vars, lists and dicts
+# Instantiate other needed vars, lists and dictionaries
 serviceCheck = True
 policyCheck = True
 vipCheck = True
@@ -234,6 +234,7 @@ try:
     for fg in fortigates:
         print("Processing fortigate-vdom: " + fg)
         serviceMatch = {}  # Dict to store all matching object info
+        svc_count = 0
         fgt = FortiOSREST()
         result = fgt.login(fortigates[fg]['host'], fortigates[fg]['login'], fortigates[fg]['passwd'])
 
@@ -259,13 +260,14 @@ try:
 
                         serviceMatch[lprotoport].append({result: {'type': 'fgservice', 'policymatch': [],
                                                                   'groups': []}})
-
+                        svc_count += 1
             #######################################
             # Service Group Matching
             #######################################
             # Also need to check if any of the services that were matched are in an address group
             # If so then we'll store those address groups, and later check to see if those are used
             # in a policy
+            svcgrp_count = 0
             response = fgt.get('cmdb', 'firewall.service', 'group', parameters={'vdom': fortigates[fg]['vdom']})
             json_response = json.loads(response.decode())
 
@@ -284,10 +286,13 @@ try:
                                         # update existing service object with related servicegroup map
                                         serviceMatch[protoport][service_key][svc_key]['groups'].append(group['name'])
 
+                                        svcgrp_count += 1
+
         ##########################################
         # VIP Matching
         ##########################################
         if vipCheck:
+            vip_count = 0
             # Get list of all vips defined on fortigate
             response = fgt.get('cmdb', 'firewall', 'vip', parameters={'vdom': fortigates[fg]['vdom']})
             json_response = json.loads(response.decode())
@@ -306,6 +311,7 @@ try:
                             serviceMatch[protoport] = []
 
                         serviceMatch[protoport].append({result: {'type': 'fgvip', 'policymatch': [], 'groups': []}})
+                        vip_count += 1
 
             #######################################
             # VIP Group Matching
@@ -313,6 +319,7 @@ try:
             # Also need to check if any of the vips that were matched are in an vip group
             # If so then we'll store those vip groups, and later check to see if those are used
             # in a policy
+            vipgrp_count = 0
             response = fgt.get('cmdb', 'firewall', 'vipgrp', parameters={'vdom': fortigates[fg]['vdom']})
             json_response = json.loads(response.decode())
 
@@ -329,13 +336,14 @@ try:
 
                                         # update existing service object with related servicegroup map
                                         serviceMatch[protoport][service_key][svc_key]['groups'].append(group['name'])
-
+                                        vipgrp_count += 1
         ##########################################
         # Policy Matching
         ##########################################
         # Given a list of service objects, check to see if any policies use the service objects
         # If there is a match, we will add the policyid of the matching rule to the services object data
         if policyCheck:
+            pol_count = 0
             # Query the FG for defined policies
             response = fgt.get('cmdb', 'firewall', 'policy', parameters={'vdom': fortigates[fg]['vdom']})
             json_response = json.loads(response.decode())
@@ -346,6 +354,8 @@ try:
                         result = find_policy_match(json_response['results'], svc_key, svc_value['type'])
                         if result:
                             serviceMatch[protoport][service_key][svc_key]['policymatch'].append(result)
+
+                            pol_count += 1
 
         ########################################
         # Results Output
@@ -361,8 +371,14 @@ try:
             #print(json.dumps(serviceMatch))
             outfile.write(json.dumps(serviceMatch))
 
+        print('\tServices Match:\t' + str(svc_count) + ',\tService Groups Match: ' + str(svcgrp_count))
+        print('\tVIPs Match:\t' + str(vip_count) + ',\tVIP Groups Match:\t' + str(vipgrp_count))
+        print('\tPolicies Match:\t' + str(pol_count))
+        print()
+
         outfile.flush()
         fgt.logout()
+
 
     print('***********************************************')
     print('Completed, results written to: ' + os.path.abspath(args.outfile))
