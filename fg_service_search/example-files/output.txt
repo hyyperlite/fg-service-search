@@ -1,0 +1,433 @@
+{
+  "date-time": "2017-12-12 17:01:45",
+  "fortigate": "10.0.2.1",
+  "tcp/443": [
+    {
+      "webproxy": {
+        "groups": [],
+        "policymatch": [],
+        "type": "fgservice"
+      }
+    },
+    {
+      "HTTPS": {
+        "groups": [
+          "Exchange Server",
+          "Web Access"
+        ],
+        "policymatch": [
+          [
+            186,
+            94,
+            119,
+            31,
+            91
+          ]
+        ],
+        "type": "fgservice"
+      }
+    },
+    {
+      "Exchange Server": {
+        "policymatch": [],
+        "type": "fgservicegrp"
+      }
+    },
+    {
+      "Web Access": {
+        "policymatch": [],
+        "type": "fgservicegrp"
+      }
+    },
+    {
+      "temp-fmg": {
+        "groups": [],
+        "policymatch": [
+          [
+            91
+          ]
+        ],
+        "type": "fgvip"
+      }
+    },
+    {
+      "test-vip": {
+        "groups": [
+          "vip-group-test"
+        ],
+        "policymatch": [],
+        "type": "fgvip"
+      }
+    },
+    {
+      "vip-group-test": {
+        "policymatch": [
+          [
+            97
+          ]
+        ],
+        "type": "fgvipgrp"
+      }
+    }
+  ],
+  "tcp/445": [
+    {
+      "webproxy": {
+        "groups": [],
+        "policymatch": [],
+        "type": "fgservice"
+      }
+    },
+    {
+      "SMB": {
+        "groups": [
+          "Windows AD"
+        ],
+        "policymatch": [],
+        "type": "fgservice"
+      }
+    },
+    {
+      "Windows AD": {
+        "policymatch": [
+          [
+            93
+          ]
+        ],
+        "type": "fgservicegrp"
+      }
+    },
+    {
+      "test-vip": {
+        "groups": [
+          "vip-group-test"
+        ],
+        "policymatch": [],
+        "type": "fgvip"
+      }
+    },
+    {
+      "vip-group-test": {
+        "policymatch": [
+          [
+            97
+          ]
+        ],
+        "type": "fgvipgrp"
+      }
+    }
+  ],
+  "tcp/53": [
+    {
+      "webproxy": {
+        "groups": [],
+        "policymatch": [],
+        "type": "fgservice"
+      }
+    },
+    {
+      "DNS": {
+        "groups": [
+          "Email Access",
+          "Exchange Server",
+          "Web Access",
+          "Windows AD"
+        ],
+        "policymatch": [
+          [
+            177,
+            78,
+            119,
+            52,
+            49,
+            60
+          ]
+        ],
+        "type": "fgservice"
+      }
+    },
+    {
+      "Email Access": {
+        "policymatch": [],
+        "type": "fgservicegrp"
+      }
+    },
+    {
+      "Exchange Server": {
+        "policymatch": [],
+        "type": "fgservicegrp"
+      }
+    },
+    {
+      "Web Access": {
+        "policymatch": [],
+        "type": "fgservicegrp"
+      }
+    },
+    {
+      "Windows AD": {
+        "policymatch": [
+          [
+            93
+          ]
+        ],
+        "type": "fgservicegrp"
+      }
+    }
+  ],
+  "tcp/80": [
+    {
+      "webproxy": {
+        "groups": [],
+        "policymatch": [],
+        "type": "fgservice"
+      }
+    },
+    {
+      "HTTP": {
+        "groups": [
+          "Web Access"
+        ],
+        "policymatch": [
+          [
+            186,
+            94,
+            119,
+            31
+          ]
+        ],
+        "type": "fgservice"
+      }
+    },
+    {
+      "test-match": {
+        "groups": [],
+        "policymatch": [],
+        "type": "fgservice"
+      }
+    },
+    {
+      "Web Access": {
+        "policymatch": [],
+        "type": "fgservicegrp"
+      }
+    }
+  ],
+  "vdom": "root"
+}{
+  "date-time": "2017-12-12 17:01:46",
+  "fortigate": "192.168.1.1",
+  "tcp/443": [
+    {
+      "webproxy": {
+        "groups": [],
+        "policymatch": [],
+        "type": "fgservice"
+      }
+    },
+    {
+      "HTTPS": {
+        "groups": [
+          "Exchange Server",
+          "Web Access"
+        ],
+        "policymatch": [
+          [
+            186,
+            94,
+            119,
+            31,
+            91
+          ]
+        ],
+        "type": "fgservice"
+      }
+    },
+    {
+      "Exchange Server": {
+        "policymatch": [],
+        "type": "fgservicegrp"
+      }
+    },
+    {
+      "Web Access": {
+        "policymatch": [],
+        "type": "fgservicegrp"
+      }
+    },
+    {
+      "temp-fmg": {
+        "groups": [],
+        "policymatch": [
+          [
+            91
+          ]
+        ],
+        "type": "fgvip"
+      }
+    },
+    {
+      "test-vip": {
+        "groups": [
+          "vip-group-test"
+        ],
+        "policymatch": [],
+        "type": "fgvip"
+      }
+    },
+    {
+      "vip-group-test": {
+        "policymatch": [
+          [
+            97
+          ]
+        ],
+        "type": "fgvipgrp"
+      }
+    }
+  ],
+  "tcp/445": [
+    {
+      "webproxy": {
+        "groups": [],
+        "policymatch": [],
+        "type": "fgservice"
+      }
+    },
+    {
+      "SMB": {
+        "groups": [
+          "Windows AD"
+        ],
+        "policymatch": [],
+        "type": "fgservice"
+      }
+    },
+    {
+      "Windows AD": {
+        "policymatch": [
+          [
+            93
+          ]
+        ],
+        "type": "fgservicegrp"
+      }
+    },
+    {
+      "test-vip": {
+        "groups": [
+          "vip-group-test"
+        ],
+        "policymatch": [],
+        "type": "fgvip"
+      }
+    },
+    {
+      "vip-group-test": {
+        "policymatch": [
+          [
+            97
+          ]
+        ],
+        "type": "fgvipgrp"
+      }
+    }
+  ],
+  "tcp/53": [
+    {
+      "webproxy": {
+        "groups": [],
+        "policymatch": [],
+        "type": "fgservice"
+      }
+    },
+    {
+      "DNS": {
+        "groups": [
+          "Email Access",
+          "Exchange Server",
+          "Web Access",
+          "Windows AD"
+        ],
+        "policymatch": [
+          [
+            177,
+            78,
+            119,
+            52,
+            49,
+            60
+          ]
+        ],
+        "type": "fgservice"
+      }
+    },
+    {
+      "Email Access": {
+        "policymatch": [],
+        "type": "fgservicegrp"
+      }
+    },
+    {
+      "Exchange Server": {
+        "policymatch": [],
+        "type": "fgservicegrp"
+      }
+    },
+    {
+      "Web Access": {
+        "policymatch": [],
+        "type": "fgservicegrp"
+      }
+    },
+    {
+      "Windows AD": {
+        "policymatch": [
+          [
+            93
+          ]
+        ],
+        "type": "fgservicegrp"
+      }
+    }
+  ],
+  "tcp/80": [
+    {
+      "webproxy": {
+        "groups": [],
+        "policymatch": [],
+        "type": "fgservice"
+      }
+    },
+    {
+      "HTTP": {
+        "groups": [
+          "Web Access"
+        ],
+        "policymatch": [
+          [
+            186,
+            94,
+            119,
+            31
+          ]
+        ],
+        "type": "fgservice"
+      }
+    },
+    {
+      "test-match": {
+        "groups": [],
+        "policymatch": [],
+        "type": "fgservice"
+      }
+    },
+    {
+      "Web Access": {
+        "policymatch": [],
+        "type": "fgservicegrp"
+      }
+    }
+  ],
+  "vdom": "root"
+}

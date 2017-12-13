@@ -15,4 +15,4 @@ setup(
 
 import os
 print("installing ftnt lib from source")
-os.system("cd ./dependencies/ftntlib-0.4.0.dev13; python3 ./setup.py install")
+os.system("cd ./dependencies/ftlib; python3 ./setup.py install")
