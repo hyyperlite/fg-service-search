@@ -52,31 +52,43 @@ Execute fg_service_search setup, from cloned directory.
 sudo python3 setup.py install
 ```
 
-## Examples
+### Examples
 
 Get Help
 
-`python3 fgss.py -h`
+```
+python3 fgss.py -h
+```
 
 Single FortiGate/VDOM, single search proto/port via CLI
 
-`python3 fgss.py --fortigate <ip|hostname> --vdom <vdom> --login <login> --passwd <password> --searchproto tcp --searchport 445`
+```
+python3 fgss.py --fortigate <ip|hostname> --vdom <vdom> --login <login> --passwd <password> --searchproto tcp --searchport 445
+```
 
 Execute on multiple fortigates/vdoms for multiple protocols/ports by providing files with lists of each. (For examples of required file formats refer to example-files directory)
 
-`python3 fgss.py --fglist </path/to/fg-vdom/list> --servicelist <path/to/port-proto/list>`
+```
+python3 fgss.py --fglist </path/to/fg-vdom/list> --servicelist <path/to/port-proto/list>
+```
 
 Output by default will be to CWD/output.txt.  To change output path:
 
-`python3 fgss.py --fglist </path/to/fg-vdom/list> --servicelist <path/to/port-porto/list --outfile </path/to/output/file>`
+```
+python3 fgss.py --fglist </path/to/fg-vdom/list> --servicelist <path/to/port-porto/list --outfile </path/to/output/file>
+```
 
 Output to file will by default be in standard json.  To print in more human readable json_pretty:
 
-`python3 fgss.py --fglist </path/to/fg-vdom/list> --servicelist <path/to/port-porto/list --format json_pretty`
+```
+python3 fgss.py --fglist </path/to/fg-vdom/list> --servicelist <path/to/port-porto/list --format json_pretty
+```
 
 Output file by default will be in write mode. All data will be overwritten on each execution.  To change to append mode:
 
-`python3 fgss.py --fglist </path/to/fg-vdom/list> --servicelist <path/to/port-porto/list --outfilemode a`
+```
+python3 fgss.py --fglist </path/to/fg-vdom/list> --servicelist <path/to/port-porto/list --outfilemode a
+```
 
 
 ## Authors
