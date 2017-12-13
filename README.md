@@ -1,6 +1,6 @@
 # fg-service-search
 
-A program to search the configuration of one or more FortiGates/FortiGate VDOMs for services, service groups, VIPS and VIP Groups that match one or more supplied protocol/port combination(s).  Any matches identified are then searched for in the firewall policy to see if they are used.  If used the policy IDs each are used in are marked.  A JSON list of relevant matches and associations is returned.
+A program to search the configuration of one or more FortiGates/FortiGate VDOMs for services, service groups, VIPS and VIP Groups that match one or more supplied protocol/port combination(s).  Any matches identified are then searched for in the firewall policy to see if they are used.  If used the policy IDs each are used in are marked.  A JSON list of relevant matches and associations is output.
 
 ## Notice
 
@@ -63,7 +63,7 @@ python3 fgss.py -h
 Single FortiGate/VDOM, single search proto/port via CLI
 
 ```
-python3 fgss.py --fortigate <ip|hostname> --vdom <vdom> --login <login> --passwd <password> --searchproto tcp --searchport 445
+python3 fgss.py --fortigate <ip|hostname> --vdom <vdom> --login <login> --passwd <password> --searchproto <tcp|udp|sctp> --searchport <1-65535>
 ```
 
 Execute on multiple fortigates/vdoms for multiple protocols/ports by providing files with lists of each. (For examples of required file formats refer to example-files directory)
