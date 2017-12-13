@@ -16,7 +16,7 @@ git clone https://github.com/hyyperlite/fg-service-search
 
 ### Prerequisites
 
-* Python3
+* python3
 * libxml2
 * libxml-dev
 * libxslt
