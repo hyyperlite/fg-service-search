@@ -232,7 +232,7 @@ def find_policy_match(policies, searchitem, objtype):
 try:
     # Iterate through each FortiGate/VDOM combination loaded from CLI or from fortigates file list
     for fg in fortigates:
-        print("Processing fortigate-vdom: " + fg)
+        print("Processing: " + fg)
         serviceMatch = {}  # Dict to store all matching object info
         svc_count = 0
         fgt = FortiOSREST()
@@ -371,16 +371,16 @@ try:
             #print(json.dumps(serviceMatch))
             outfile.write(json.dumps(serviceMatch))
 
-        print('\tServices Match:\t' + str(svc_count) + ',\tService Groups Match: ' + str(svcgrp_count))
-        print('\tVIPs Match:\t' + str(vip_count) + ',\tVIP Groups Match:\t' + str(vipgrp_count))
-        print('\tPolicies Match:\t' + str(pol_count))
+        print('\t Services Match: {}, Service Groups Match: {}'.format(svc_count, svcgrp_count))
+        print('\t VIP Match: {}, VIP Groups Match: {}'.format(vip_count, vipgrp_count))
+        print('\t Policy Match: {}'.format(vip_count, vipgrp_count))
         print()
 
         outfile.flush()
         fgt.logout()
 
 
-    print('***********************************************')
+    print('*'*40)
     print('Completed, results written to: ' + os.path.abspath(args.outfile))
     outfile.close()
 
