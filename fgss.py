@@ -94,11 +94,11 @@ if args.outfile:
 if args.fglist:
     for line in fglist:
         fg, vdom, login, passwd = line.split()
-        fortigates[fg + '-' + vdom] = {'host': fg, 'vdom': vdom, 'login': login, 'passwd': passwd}
+        fortigates[fg + '-' + vdom] = {'host': fg + ':' + args.fgport, 'vdom': vdom, 'login': login, 'passwd': passwd}
     fglist.close()
 elif args.fortigate:
-    fortigates[args.fortigate + '-' + args.vdom] = {'host': args.fortigate, 'vdom': args.vdom,
-                                                    'login': args.login, 'passwd': args.passwd}
+    fortigates[args.fortigate + '-' + args.vdom] = {'host': args.fortigate + ':' + args.fgport,
+                                                    'vdom': args.vdom, 'login': args.login, 'passwd': args.passwd}
 
 # Create list of proto/port to search for from file, or if no file specified from cli arguments
 if args.servicelist:
