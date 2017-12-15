@@ -276,21 +276,14 @@ def simpleOutput(serviceMatch, outfile):
                 if 'groups' in serviceMatch['objmatch'][protoport][fgobj_key][key]:
                     groups = serviceMatch['objmatch'][protoport][fgobj_key][key]['groups']
 
-                mytest = 'letmein'
-                if key == mytest:
-                    print(key)
-                    print(serviceMatch['objmatch'][protoport][fgobj_key][key])
-
                 # Special Handling for "ALL" object
                 if key == 'ALL':
                     if len(all['policymatch']) > 0:
                         all['policymatch'] += policyMatch
                         all['groups'] += groups
-                        if key == 'myrdp': print('test0')
                     else:
                         all['policymatch'] = serviceMatch['objmatch'][protoport][fgobj_key][key]['policymatch']
                         all['groups'] = serviceMatch['objmatch'][protoport][fgobj_key][key]['groups']
-                        if key == mytest: print('test1')
                 else:
                     if len(policyMatch) > 0:
                         outStr += 'Fortigate/VDOM: {}/{}\n'.format(fortigate, vdom)
