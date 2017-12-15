@@ -275,18 +275,19 @@ try:
             # For each service object returned from FG, search for protocol/port match
             for fgsvc in json_response['results']:
                 for item in portproto:
-                    lproto = portproto[item]['protocol']
-                    lport = portproto[item]['port']
-                    lprotoport = lproto + "/" + str(lport)
+                    proto = portproto[item]['protocol']
+                    port = portproto[item]['port']
+                    protoport = proto + "/" + str(port)
 
-                    result = find_service(fgsvc, lproto, lport)
+                    result = find_service(fgsvc, proto, port)
                     if result:
-                        if lprotoport not in serviceMatch.keys():
-                            serviceMatch[lprotoport] = []
+                        if protoport not in serviceMatch.keys():
+                            serviceMatch[protoport] = []
 
-                        serviceMatch[lprotoport].append({result: {'type': 'fgservice', 'policymatch': [],
+                        serviceMatch[protoport].append({result: {'type': 'fgservice', 'policymatch': [],
                                                                   'groups': []}})
                         svc_count += 1
+
             #######################################
             # Service Group Matching
             #######################################
@@ -383,6 +384,9 @@ try:
                             serviceMatch[protoport][service_key][svc_key]['policymatch'].append(result)
 
                             pol_count += 1
+
+
+
 
         ########################################
         # Results Output
