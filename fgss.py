@@ -415,10 +415,8 @@ try:
         print('\t Policy Match: {}'.format(vip_count, vipgrp_count))
         print()
 
-
         outfile.flush()
         fgt.logout()
-
 
     print('*'*40)
     print('Completed, results written to: ' + os.path.abspath(args.outfile))
