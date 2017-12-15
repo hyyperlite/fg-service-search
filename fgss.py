@@ -24,7 +24,7 @@ parser.add_argument('--searchport', type=int, help=''
                         'a protocol to search for (also requires --searchprotocol')
 
 parser.add_argument('--servicelist', help='provide path to file containing list of proto and port')
-parser.add_argument('--format', choices=['json', 'json_pretty'], default='json', help='output format')
+parser.add_argument('--format', choices=['json', 'json_pretty', 'simple'], default='json', help='output format')
 parser.add_argument('--outfile', default='./output.txt', help='path to results file')
 parser.add_argument('--outfilemode', default='w', choices=['w', 'a'], help='w=overwrite file, a=append to file')
 args = parser.parse_args()
@@ -225,6 +225,32 @@ def find_policy_match(policies, searchitem, objtype):
         return False
 
 
+def simpleOutput(serviceMatch, outfile):
+    fortigate = serviceMatch['fortigate']
+    vdom = serviceMatch['vdom']
+    for protoport in serviceMatch:
+        if protoport != 'fortigate' and protoport != 'vdom' and protoport != 'date-time':
+            for fgobj_key, fgobj_val in enumerate(serviceMatch[protoport]):
+                for key, val in serviceMatch[protoport][fgobj_key].items():
+                    type = serviceMatch[protoport][fgobj_key][key]['type']
+                    policyMatch = serviceMatch[protoport][fgobj_key][key]['policymatch']
+
+                    if 'groups' in serviceMatch[protoport][fgobj_key][key]:
+                        groups = serviceMatch[protoport][fgobj_key][key]['groups']
+                    else:
+                        groups = []
+
+                    if len(policyMatch) > 0:
+                        ('Fortigate: {}, VDOM: {}'.format(fortigate, vdom))
+                        outfile.write('Protocol/Port Match: {}\n'.format(protoport))
+                        outfile.write('Object Name: {}\n'.format(key))
+                        outfile.write('Object Type: {}\n'.format(type))
+                        if len(groups) > 0:
+                            outfile.write('Member of: {}\n'.format(groups))
+                        outfile.write('Used in Policies: {}\n'.format(policyMatch))
+                        outfile.write('-'*36)
+                        outfile.write('\n\n')
+
 ##################################################
 #### Main Processing
 #################################################
@@ -337,6 +363,7 @@ try:
                                         # update existing service object with related servicegroup map
                                         serviceMatch[protoport][service_key][svc_key]['groups'].append(group['name'])
                                         vipgrp_count += 1
+
         ##########################################
         # Policy Matching
         ##########################################
@@ -367,6 +394,8 @@ try:
         if args.format == 'json_pretty':
             #print(json.dumps(serviceMatch, indent=2, sort_keys=True))
             outfile.write(json.dumps(serviceMatch, indent=2, sort_keys=True))
+        elif args.format == 'simple':
+            simpleOutput(serviceMatch, outfile)
         else:
             #print(json.dumps(serviceMatch))
             outfile.write(json.dumps(serviceMatch))
@@ -382,6 +411,7 @@ try:
 
     print('*'*40)
     print('Completed, results written to: ' + os.path.abspath(args.outfile))
+    #print(json.dumps(serviceMatch, indent=2, sort_keys=True))
     outfile.close()
 
 # If exception, close attempt close fg connection and print exception msg
