@@ -240,7 +240,7 @@ def simpleOutput(serviceMatch, outfile):
                         groups = []
 
                     if len(policyMatch) > 0:
-                        ('Fortigate: {}, VDOM: {}'.format(fortigate, vdom))
+                        outfile.write('Fortigate: {}, VDOM: {}\n'.format(fortigate, vdom))
                         outfile.write('Protocol/Port Match: {}\n'.format(protoport))
                         outfile.write('Object Name: {}\n'.format(key))
                         outfile.write('Object Type: {}\n'.format(type))
