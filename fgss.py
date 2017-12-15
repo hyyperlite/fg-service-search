@@ -122,6 +122,34 @@ def find_service(service, searchproto, searchport):
     lowport = []
     highport = []
 
+    # Match any generic IP (ALL, TCP, UDP, ICMP)
+    if service['protocol'] == 'IP':
+        if service['protocol-number'] == 0:
+            return service['name']
+        elif searchproto == 'tcp' and service['protocol-number'] == 6:
+            return service['name']
+        elif searchproto == 'udp' and service['protocol-number'] == 17:
+            return service['name']
+        elif searchproto == 'icmp' and service['protocol-number'] == 1:
+            return service['name']
+        else:
+            pass
+
+    # Find IP protocol specified matches
+    if searchproto == 'ip':
+        if service['protocol'] == 'IP' and searchport == service['protocol-number']:
+            return service['name']
+        else:
+            return False
+
+    # Find ICMP specified matches (will match protocol and type, but not icmp code)
+    if searchproto == 'icmp':
+        if service['protocol'] == 'ICMP' and searchport == str(service['icmptype']):
+                return service['name']
+        else:
+            return False
+
+
     # Check if object is associated to protocol being searched for
     if service[prange] == '':
         return False
@@ -223,37 +251,80 @@ def find_policy_match(policies, searchitem, objtype):
     else:
         return False
 
-
+# Simplified output formatting for NOC/SOC employee use
 def simpleOutput(serviceMatch, outfile):
+    all = {'policymatch': [], 'groups': []}
     fortigate = serviceMatch['fortigate']
     vdom = serviceMatch['vdom']
-    for protoport in serviceMatch['objmatch']:
-        if protoport != 'fortigate' and protoport != 'vdom' and protoport != 'date-time':
-            for fgobj_key, fgobj_val in enumerate(serviceMatch['objmatch'][protoport]):
-                for key, val in serviceMatch['objmatch'][protoport][fgobj_key].items():
-                    type = serviceMatch['objmatch'][protoport][fgobj_key][key]['type']
-                    policyMatch = serviceMatch['objmatch'][protoport][fgobj_key][key]['policymatch']
+    outStr = ''
 
-                    if 'groups' in serviceMatch['objmatch'][protoport][fgobj_key][key]:
-                        groups = serviceMatch['objmatch'][protoport][fgobj_key][key]['groups']
+    outfile.write('-'*100)
+    outfile.write('\n')
+    outfile.write('{}/{}'.format(fortigate,vdom))
+    outfile.write('\n')
+    outfile.write('-'*100)
+    outfile.write('\n\n')
+
+
+    for protoport in sorted(serviceMatch['objmatch']):
+        for fgobj_key, fgobj_val in enumerate(serviceMatch['objmatch'][protoport]):
+            for key, val in serviceMatch['objmatch'][protoport][fgobj_key].items():
+                groups = []
+                type = serviceMatch['objmatch'][protoport][fgobj_key][key]['type']
+                policyMatch = serviceMatch['objmatch'][protoport][fgobj_key][key]['policymatch']
+
+                if 'groups' in serviceMatch['objmatch'][protoport][fgobj_key][key]:
+                    groups = serviceMatch['objmatch'][protoport][fgobj_key][key]['groups']
+
+                mytest = 'letmein'
+                if key == mytest:
+                    print(key)
+                    print(serviceMatch['objmatch'][protoport][fgobj_key][key])
+
+                # Special Handling for "ALL" object
+                if key == 'ALL':
+                    if len(all['policymatch']) > 0:
+                        all['policymatch'] += policyMatch
+                        all['groups'] += groups
+                        if key == 'myrdp': print('test0')
                     else:
-                        groups = []
-
+                        all['policymatch'] = serviceMatch['objmatch'][protoport][fgobj_key][key]['policymatch']
+                        all['groups'] = serviceMatch['objmatch'][protoport][fgobj_key][key]['groups']
+                        if key == mytest: print('test1')
+                else:
                     if len(policyMatch) > 0:
-                        outfile.write('Fortigate: {}, VDOM: {}\n'.format(fortigate, vdom))
-                        outfile.write('Protocol/Port Match: {}\n'.format(protoport))
-                        outfile.write('Object Name: {}\n'.format(key))
-                        outfile.write('Object Type: {}\n'.format(type))
+                        outStr += 'Fortigate/VDOM: {}/{}\n'.format(fortigate, vdom)
+                        outStr += 'Protocol/Port Match: {}\n'.format(protoport)
+                        outStr += 'Object Name: {}\n'.format(key)
+                        outStr += 'Object Type: {}\n'.format(type)
                         if len(groups) > 0:
-                            outfile.write('Member of: {}\n'.format(groups))
-                        outfile.write('Used in Policies: {}\n'.format(policyMatch))
-                        outfile.write('-'*36)
-                        outfile.write('\n\n')
+                            outStr += 'Member of: {}\n'.format(groups)
+                        outStr += 'Used in Policies: {}\n'.format(sorted(policyMatch))
+                        outStr += '-'*36
+                        outStr += '\n\n'
+
+    if len(all['policymatch']) > 0:
+        all['policymatch'] = set(all['policymatch'])
+
+        outfile.write('*'*36)
+        outfile.write('\n')
+        outfile.write('Fortigate/VDOM: {}/{}\n'.format(fortigate, vdom))
+        outfile.write('')
+        outfile.write('\"ALL\" Object Summary')
+        outfile.write('\n')
+        outfile.write('Used in Policies: {}'.format(sorted(all['policymatch'])))
+        if len(all['groups']) > 0:
+            all['groups'] = set(all['groups'])
+            outfile.write('\nMember of: {}'.format(all['groups']))
+        outfile.write('\n')
+        outfile.write('*'*36)
+        outfile.write('\n\n')
+
+    outfile.write(outStr)
 
 ##################################################
 #### Main Processing
 #################################################
-
 try:
     # Iterate through each FortiGate/VDOM combination loaded from CLI or from fortigates file list
     for fg in fortigates:
@@ -278,15 +349,20 @@ try:
                     port = portproto[item]['port']
                     protoport = proto + "/" + str(port)
 
+                    # if fgsvc['name'] == 'PING':
+                    #     print(fgsvc)
+                    #     sys.exit()
+
                     result = find_service(fgsvc, proto, port)
+
                     if result:
                         if protoport not in serviceMatch['objmatch'].keys():
                             serviceMatch['objmatch'][protoport] = []
 
                         serviceMatch['objmatch'][protoport].append({result: {'type': 'fgservice', 'policymatch': [],
                                                                   'groups': []}})
-                        svc_count += 1
 
+                        svc_count += 1
 
             #######################################
             # Service Group Matching
@@ -315,7 +391,6 @@ try:
                                             .append(group['name'])
 
                                         svcgrp_count += 1
-
 
         ##########################################
         # VIP Matching
@@ -389,7 +464,8 @@ try:
                     for svc_key, svc_value in service_value.items():
                         result = find_policy_match(json_response['results'], svc_key, svc_value['type'])
                         if result:
-                            serviceMatch['objmatch'][protoport][service_key][svc_key]['policymatch'].append(result)
+                            # serviceMatch['objmatch'][protoport][service_key][svc_key]['policymatch'].append(result)
+                            serviceMatch['objmatch'][protoport][service_key][svc_key]['policymatch'] += result
 
                             pol_count += 1
 
@@ -410,17 +486,17 @@ try:
             # print(json.dumps(serviceMatch))
             outfile.write(json.dumps(serviceMatch))
 
-        print('\t Services Match: {}, Service Groups Match: {}'.format(svc_count, svcgrp_count))
-        print('\t VIP Match: {}, VIP Groups Match: {}'.format(vip_count, vipgrp_count))
-        print('\t Policy Match: {}'.format(vip_count, vipgrp_count))
-        print()
+        # print('\t Services Match: {}, Service Groups Match: {}'.format(svc_count, svcgrp_count))
+        # print('\t VIP Match: {}, VIP Groups Match: {}'.format(vip_count, vipgrp_count))
+        # print('\t Policy Match: {}'.format(vip_count, vipgrp_count))
+        # print()
 
         outfile.flush()
         fgt.logout()
 
     print('*'*40)
     print('Completed, results written to: ' + os.path.abspath(args.outfile))
-    #print(json.dumps(serviceMatch, indent=2, sort_keys=True))
+    # print(json.dumps(serviceMatch, indent=2, sort_keys=True))
     outfile.close()
 
 # If exception, close attempt close fg connection and print exception msg

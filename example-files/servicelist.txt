@@ -1,6 +1,7 @@
 tcp/53
 tcp/80
 tcp/443
-udp/87
-udp/514
 tcp/445
+tcp/3389
+icmp/8
+ip/6
