@@ -36,11 +36,10 @@ verbose = False
 allowedprotos = [6, 17, 132]
 allowedprotosname = ['tcp', 'udp', 'sctp']
 
-# Create lists / dicts based on cli input
+# Create lists & dictionaries based on cli input
 fortigates = {}      # Dictionary to contain list of fortigates, logins, passwds
 portproto = {}   # Dictionary to contain list of protocol and ports to search for
 svcsbyname = []    # List to contain named services to search for
-
 
 # Check Options for validity and relationships
 if not args.fortigate and not args.fglist:
@@ -494,6 +493,8 @@ try:
 
 # If exception, close attempt close fg connection and print exception msg
 except Exception as e:
-    print('****** EXCEPTION *******')
-    print(e)
-    fgt.logout()
+    print('Error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
+    try:
+        fgt.logout()
+    except:
+        pass
