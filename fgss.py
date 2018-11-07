@@ -102,6 +102,8 @@ elif args.fortigate:
 if args.servicelist:
     x = 0
     for line in servicelist:
+        if not '/' in line:
+            continue
         line = line.rstrip()
         protocol, port = line.split('/')
         portproto[x] = {'protocol': protocol.lower(), 'port': port.lower()}
@@ -134,7 +136,7 @@ def find_service(service, searchproto, searchport):
         else:
             pass
 
-    # Find IP protocol specified matches
+    # Find IP protocol specified matchesc
     if searchproto == 'ip':
         if service['protocol'] == 'IP' and searchport == service['protocol-number']:
             return service['name']
@@ -491,7 +493,7 @@ try:
     # print(json.dumps(serviceMatch, indent=2, sort_keys=True))
     outfile.close()
 
-# If exception, close attempt close fg connection and print exception msg
+# If exception, attempt close fg connection and print exception msg
 except Exception as e:
     print('Error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
     try:
