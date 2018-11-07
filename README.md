@@ -1,6 +1,6 @@
-# fg-service-search
+# fg_api
 
-A program to search the configuration of one or more FortiGates/FortiGate VDOMs for services, service groups, VIPS and VIP Groups that match one or more supplied protocol/port combination(s).  Any matches identified are then searched for in the firewall policy to see if they are used.  If used the policy IDs each are used in are marked.  A JSON list of relevant matches and associations is output.
+A playground of test snippets for FortiGate REST API
 
 ## Notice
 
@@ -8,7 +8,7 @@ It is recommended that this code be tested in a lab/staging environment prior to
 
 ## Testing
 
-Tested against FortiOS 5.6.2 using Ubuntu 16.04 and Windows10
+Tested against FortiOS 5.6.5 and 6.0.2
 
 ## Getting Started
 
